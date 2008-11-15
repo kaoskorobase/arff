@@ -8,6 +8,7 @@ module Text.ARFF (
     -- * ARFF relations
     Relation,
     relation,
+    encode,
     -- * Attribute constructors
     Attribute,
     a_string,
@@ -24,9 +25,7 @@ module Text.ARFF (
     real,
     int,
     nominal,
-    date,
-    -- * Content generation
-    encode
+    date
 ) where
 
 import Control.Arrow                    ((<<<))
@@ -73,6 +72,10 @@ data Relation = Relation
 -- | Construct a relation from a name, attributes and values.
 relation :: String -> [Attribute] -> [[Value]] -> Relation
 relation = Relation
+
+-- | Convert a 'Relation' to its textual representation.
+encode :: Relation -> ByteString
+encode = runPut . putRelation
 
 intersperseP :: Put -> [Put] -> Put
 intersperseP _ []     = return ()
@@ -206,7 +209,3 @@ nominal = NominalValue
 -- | Date value constructor
 date :: (FormatTime a) => a -> Value
 date = DateValue
-
--- | Convert a 'Relation' to its textual representation.
-encode :: Relation -> ByteString
-encode = runPut . putRelation
