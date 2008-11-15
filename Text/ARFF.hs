@@ -105,33 +105,43 @@ putAttribute (Attribute atype name) = unwordsP [putAsciiStr "@attribute", putAsc
 putMissingValue :: Put
 putMissingValue = putAscii '?'
 
-typeError :: String -> Put
-typeError = fail
+instance P.Show (Value) where
+    show (StringValue _)  = "String"
+    show (RealValue _)    = "Real"
+    show (IntegerValue _) = "Integer"
+    show (NominalValue _) = "Nominal"
+    show (DateValue _)    = "Date"
 
-putString :: Value -> Put
-putString (StringValue x)   = showp x
-putString MissingValue      = putMissingValue
-putString _                 = typeError "String"
+typeError :: String -> String -> Value -> Put
+typeError attrName attrType value =
+    error $ "Text.ARFF.encode: type mismatch -- attribute \"" ++ attrName ++ "\""
+         ++ " has type " ++ attrType ++ ","
+         ++ " but got " ++ (show value)
 
-putReal :: Value -> Put
-putReal (RealValue x)       = showp x
-putReal MissingValue        = putMissingValue
-putReal _                   = typeError "Real"
+putString :: String -> Value -> Put
+putString _ (StringValue x)   = showp x
+putString _ MissingValue      = putMissingValue
+putString a v                 = typeError a "String" v
 
-putInteger :: Value -> Put
-putInteger (IntegerValue x) = showp x
-putInteger MissingValue     = putMissingValue
-putInteger _                = typeError "Integer"
+putReal :: String -> Value -> Put
+putReal _ (RealValue x)       = showp x
+putReal _ MissingValue        = putMissingValue
+putReal a v                   = typeError a "Real" v
 
-putNominal :: Value -> Put
-putNominal (NominalValue x) = showp x
-putNominal MissingValue     = putMissingValue
-putNominal _                = typeError "Nominal"
+putInteger :: String -> Value -> Put
+putInteger _ (IntegerValue x) = showp x
+putInteger _ MissingValue     = putMissingValue
+putInteger a v                = typeError a "Integer" v
 
-putDate :: String -> Value -> Put
-putDate fmt (DateValue d)   = showp (formatTime defaultTimeLocale fmt d)
-putDate _ MissingValue      = putMissingValue
-putDate _ _                 = typeError "Date"
+putNominal :: String -> Value -> Put
+putNominal _ (NominalValue x) = showp x
+putNominal _ MissingValue     = putMissingValue
+putNominal a v                = typeError a "Nominal" v
+
+putDate :: String -> String -> Value -> Put
+putDate fmt a (DateValue d)   = showp (formatTime defaultTimeLocale fmt d)
+putDate _   a MissingValue    = putMissingValue
+putDate _   a v               = typeError a "Date" v
 
 putRelation :: Relation -> Put
 putRelation (Relation name attrs values) =
@@ -144,19 +154,19 @@ putRelation (Relation name attrs values) =
 
 -- | String attribute constructor.
 a_string :: String -> Attribute
-a_string = Attribute (StringAttribute putString)
+a_string a = Attribute (StringAttribute (putString a)) a
 
 -- | Real attribute constructor.
 a_real :: String -> Attribute
-a_real = Attribute (RealAttribute putReal)
+a_real a = Attribute (RealAttribute (putReal a)) a
 
 -- | Integer attribute constructor.
 a_int :: String -> Attribute
-a_int = Attribute (IntegerAttribute putInteger)
+a_int a = Attribute (IntegerAttribute (putInteger a)) a
 
 -- | Nominal attribute constructor.
 a_nominal :: (Enum a, B.Show a) => [a] -> String -> Attribute
-a_nominal xs = Attribute (NominalAttribute putNominal xs)
+a_nominal xs a = Attribute (NominalAttribute (putNominal a) xs) a
 
 -- | Nominal attribute constructor.
 a_nominalFromTo :: (Enum a, B.Show a) => a -> a -> String -> Attribute
@@ -166,7 +176,7 @@ a_nominalFromTo lo hi = a_nominal (enumFromTo lo hi)
 -- Currently only supports a default date format, since we're lacking an
 -- ISO-8601 format string parser.
 a_dateFormat :: String -> String -> Attribute
-a_dateFormat fmt = Attribute (DateAttribute (putDate (fromISODateFormat fmt)) fmt)
+a_dateFormat fmt a = Attribute (DateAttribute (putDate (fromISODateFormat fmt) a) fmt) a
 
 -- | Construct a date attribute with the default date format
 -- @yyyy-MM-dd'T'HH:mm:ss@.
