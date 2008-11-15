@@ -44,7 +44,7 @@ import Prelude                          as P
 -- | Show a 'Value' in the 'Put' monad.
 type Putter = Value -> Put
 
--- | Valid ARFF types.
+-- | ARFF attribute type.
 data Type =
     StringAttribute  { put :: Putter }
   | RealAttribute    { put :: Putter }
@@ -55,7 +55,7 @@ data Type =
 -- | Attribute with associated type and name.
 data Attribute = Attribute { attrType :: Type, attrName :: String }
 
--- | Valid ARFF values.
+-- | ARFF value type.
 data Value =
     MissingValue
   | StringValue  { fromStringValue  :: String }
