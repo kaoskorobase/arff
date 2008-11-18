@@ -4,7 +4,6 @@ import Text.ARFF            (date, int, missing, nominal, real, string)
 import qualified Text.ARFF  as ARFF
 import Prelude              hiding (Show)
 import qualified Prelude    as P
-import Text.Show.ByteString (Show(..), putAsciiStr)
 
 data Strength =
     ExtremelyLow
@@ -13,9 +12,6 @@ data Strength =
   | High
   | ExtremelyHigh
   deriving (Enum, Eq, P.Show)
-
-instance Show Strength where
-    showp = putAsciiStr . show
 
 relation :: UTCTime -> ARFF.Relation
 relation t =

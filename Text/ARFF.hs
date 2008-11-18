@@ -37,8 +37,6 @@ import Data.Time.Format                 (FormatTime, formatTime)
 import System.Locale                    (defaultTimeLocale)
 import Text.Show.ByteString             (putAscii, putAsciiStr, showp, unlinesP, unwordsP)
 import qualified Text.Show.ByteString   as B
-import Prelude                          hiding (Show)
-import Prelude                          as P
 
 -- | Show a 'Value' in the 'Put' monad.
 type Putter = Value -> Put
@@ -48,7 +46,7 @@ data Type =
     StringAttribute  { put :: Putter }
   | RealAttribute    { put :: Putter }
   | IntegerAttribute { put :: Putter }
-  | forall a . (Enum a, B.Show a) => NominalAttribute { put :: Putter, enum :: [a] }
+  | forall a . Show a => NominalAttribute { put :: Putter, enum :: [a] }
   | DateAttribute    { put :: Putter, format :: String }
 
 -- | Attribute with associated type and name.
@@ -60,8 +58,8 @@ data Value =
   | StringValue  { fromStringValue  :: String }
   | RealValue    { fromRealValue    :: Double }
   | IntegerValue { fromIntegerValue :: Integer }
-  | forall a . (Enum a, B.Show a) => NominalValue { fromNominalValue :: a }
-  | forall a . (FormatTime a) =>     DateValue    { fromDateValue    :: a }
+  | forall a . (Show a)       => NominalValue { fromNominalValue :: a }
+  | forall a . (FormatTime a) => DateValue    { fromDateValue    :: a }
 
 -- | ARFF relation.
 data Relation = Relation
@@ -99,7 +97,7 @@ putType :: Type -> Put
 putType (StringAttribute _)     = putAsciiStr "string"
 putType (RealAttribute _)       = putAsciiStr "real"
 putType (IntegerAttribute _)    = putAsciiStr "integer"
-putType (NominalAttribute _ es) = putAscii '{' >> (uncommaP <<< map showp) es >> putAscii '}'
+putType (NominalAttribute _ es) = putAscii '{' >> (uncommaP <<< map (putAsciiStr.show)) es >> putAscii '}'
 putType (DateAttribute _ fmt)   = unwordsP [putAsciiStr "date", showp fmt]
 
 putAttribute :: Attribute -> Put
@@ -108,7 +106,7 @@ putAttribute (Attribute atype name) = unwordsP [putAsciiStr "@attribute", putAsc
 putMissingValue :: Put
 putMissingValue = putAscii '?'
 
-instance P.Show (Value) where
+instance Show (Value) where
     show (StringValue _)  = "String"
     show (RealValue _)    = "Real"
     show (IntegerValue _) = "Integer"
@@ -137,7 +135,7 @@ putInteger _ MissingValue     = putMissingValue
 putInteger a v                = typeError a "Integer" v
 
 putNominal :: String -> Value -> Put
-putNominal _ (NominalValue x) = showp x
+putNominal _ (NominalValue x) = putAsciiStr (show x)
 putNominal _ MissingValue     = putMissingValue
 putNominal a v                = typeError a "Nominal" v
 
@@ -168,11 +166,11 @@ a_int :: String -> Attribute
 a_int a = Attribute (IntegerAttribute (putInteger a)) a
 
 -- | Nominal attribute constructor.
-a_nominal :: (Enum a, B.Show a) => [a] -> String -> Attribute
+a_nominal :: (Show a) => [a] -> String -> Attribute
 a_nominal xs a = Attribute (NominalAttribute (putNominal a) xs) a
 
 -- | Nominal attribute constructor.
-a_nominalFromTo :: (Enum a, B.Show a) => a -> a -> String -> Attribute
+a_nominalFromTo :: (Enum a, Show a) => a -> a -> String -> Attribute
 a_nominalFromTo lo hi = a_nominal (enumFromTo lo hi)
 
 -- | Date attribute constructor.
@@ -203,7 +201,7 @@ int :: Integer -> Value
 int = IntegerValue
 
 -- | Nominal value constructor.
-nominal :: (Enum a, B.Show a) => a -> Value
+nominal :: (Show a) => a -> Value
 nominal = NominalValue
 
 -- | Date value constructor
