@@ -1,5 +1,5 @@
 name:               arff
-version:            0.0.1
+version:            0.1.0
 synopsis:           Generate Attribute-Relation File Format (ARFF) files
 description:        Generate Attribute-Relation File Format (ARFF) files.
                     .
