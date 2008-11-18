@@ -29,5 +29,3 @@ library
                     time >= 1
 
   extensions:       ExistentialQuantification
-  
-  ghc-options:      -O2 -funbox-strict-fields 
